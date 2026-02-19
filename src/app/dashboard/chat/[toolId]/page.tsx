@@ -79,8 +79,10 @@ export default function ChatPage({
             });
 
             if (res.ok) {
-                // Poll for response or just re-fetch
-                setTimeout(() => fetchMessages(toolId), 1500);
+                // Poll for response - fetch multiple times to catch slow tool results
+                setTimeout(() => fetchMessages(toolId), 2000);
+                setTimeout(() => fetchMessages(toolId), 5000);
+                setTimeout(() => fetchMessages(toolId), 10000);
             }
         } catch (error) {
             console.error("Failed to send message", error);

@@ -203,43 +203,36 @@ export async function checkInstagramUser(username: string, retryCount = 0, enabl
         }
 
         // SOFT 404 / LOGIN WALL CHECK
-        // If title is generic and no positive data found -> Likely Banned or Login redirect
+        // If title is generic and no positive data found -> Instagram blocked the request OR account doesn't exist
         const isGenericTitle = title.trim() === 'Instagram' || title.trim() === '' || title.includes('Login');
         if (isGenericTitle && !hasOGData && !hasUsernameInJSON && !hasFollowText) {
             const finalUrl = (response.request as any)?.res?.responseUrl || '';
             const isLoginRedirect = finalUrl.includes('/accounts/login/');
 
-            if (isLoginRedirect) {
-                if (enableRetry && retryCount < 3) {
-                    const waitTime = Math.pow(2, retryCount) * 60 * 1000;
-                    console.log(`[RETRY] ${username} - Login redirect, waiting ${waitTime / 1000 / 60} minutes...`);
+            if (isLoginRedirect || isGenericTitle) {
+                // Generic page = Instagram blocked our request (rate limit / bot detection)
+                // We cannot confirm if account exists or not
+                if (enableRetry && retryCount < 2) {
+                    const waitTime = Math.pow(2, retryCount) * 30 * 1000; // 30s, 60s
+                    console.log(`[RETRY] ${username} - Blocked request, retrying in ${waitTime / 1000}s...`);
                     await new Promise(resolve => setTimeout(resolve, waitTime));
                     return checkInstagramUser(username, retryCount + 1, enableRetry);
                 }
                 return {
                     username,
                     status: 'RATE_LIMIT',
-                    description: enableRetry ? `Login Redirect - ${retryCount} deneme sonrası` : 'Login Redirect',
+                    description: 'Instagram isteği engelledi - Tekrar deneyin',
                     retryCount
                 };
             }
-
-            // Generic page without any profile markers = likely non-existent account
-            return {
-                username,
-                status: 'BANLI',
-                description: 'Hesap bulunamadı (Soft 404)',
-                retryCount
-            };
         }
 
-        // Final fallback: if we reach here, we couldn't determine the status.
-        // Default to BANLI since active accounts always have identifiable data.
+        // Final fallback
         console.log(`[FALLBACK] ${username} - Title: "${title.trim()}" | hasOGData: ${hasOGData} | hasUsernameInJSON: ${hasUsernameInJSON}`);
         return {
             username,
-            status: 'BANLI',
-            description: 'Hesap bulunamadı (Tanımlanamayan sayfa)',
+            status: 'RATE_LIMIT',
+            description: 'Durum belirlenemedi - Instagram isteği kısıtlıyor olabilir',
             retryCount
         };
 
