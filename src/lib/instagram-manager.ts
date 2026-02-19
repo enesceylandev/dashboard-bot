@@ -3,7 +3,7 @@ import { checkInstagramUser } from "./instagram";
 
 export class InstagramManager {
 
-    static async handleCommand(input: string): Promise<{ summary: string, full: any }> {
+    static async handleCommand(input: string): Promise<{ summary: string, full: any } | null> {
         const trimmedInput = input.trim();
         const command = trimmedInput.split(' ')[0].toLowerCase();
         const arg = trimmedInput.split(' ').slice(1).join(' ');
@@ -31,7 +31,7 @@ export class InstagramManager {
         // Default: specific username check without /check prefix
         // If input is just a username
         if (!command.startsWith("/")) {
-            return this.checkUser(trimmedInput, true);
+            return null;
         }
 
         return {

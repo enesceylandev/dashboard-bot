@@ -5,7 +5,9 @@ export async function runTool(toolName: string, input: string, ctx: any) {
 
     if (toolName === "tool-1") {
         try {
-            return await InstagramManager.handleCommand(input);
+            const result = await InstagramManager.handleCommand(input);
+            if (!result) return { summary: "", full: { ignored: true } };
+            return result;
         } catch (error: any) {
             console.error("InstagramManager Error:", error);
             return {

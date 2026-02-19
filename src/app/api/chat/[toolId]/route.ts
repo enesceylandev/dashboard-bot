@@ -96,6 +96,10 @@ export async function POST(
             try {
                 const result = await runTool(tool_name, content, { email, roomId: toolId });
 
+                if (result.full && result.full.ignored) {
+                    return NextResponse.json({ message: inserted, tool_ignored: true });
+                }
+
                 await supabase.from("messages").insert([
                     {
                         room_id: toolId,
