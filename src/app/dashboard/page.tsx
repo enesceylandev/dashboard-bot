@@ -3,7 +3,7 @@ import { MessageSquare } from "lucide-react"
 import Link from "next/link"
 
 const tools = [
-    { name: "Tool 1", id: "tool-1", description: "Chat with Tool 1" },
+    { name: "Instagram Bot", id: "tool-1", description: "Instagram hesap durumunu kontrol et" },
     { name: "Tool 2", id: "tool-2", description: "Chat with Tool 2" },
     { name: "Tool 3", id: "tool-3", description: "Chat with Tool 3" },
 ]

@@ -6,7 +6,7 @@ import { LayoutDashboard, MessageSquare } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const tools = [
-    { name: "Tool 1", id: "tool-1" },
+    { name: "Instagram Bot", id: "tool-1" },
     { name: "Tool 2", id: "tool-2" },
     { name: "Tool 3", id: "tool-3" },
 ]

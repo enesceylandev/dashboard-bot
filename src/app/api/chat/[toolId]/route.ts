@@ -93,13 +93,15 @@ export async function POST(
                 },
             ]);
         } catch (e: any) {
-            console.error("Tool error", e);
+            console.error("Tool execution error DETAILED:", e);
+            console.error("Stack:", e.stack);
+
             await supabase.from("messages").insert([
                 {
                     room_id: toolId,
                     tool_name,
                     email: "system",
-                    content: `Tool error: ${String(e.message || e)}`,
+                    content: `System Error: ${String(e.message || e)}`,
                     type: "tool_result",
                     metadata: { error: String(e.message || e) },
                 },
