@@ -150,17 +150,24 @@ export async function checkInstagramUser(username: string, retryCount = 0, enabl
         }
 
         // Parse HTML
-        const html = response.data;
+        const html = response.data as string;
         const $ = cheerio.load(html);
 
         const title = $('title').text();
         const ogTitle = $('meta[property="og:title"]').attr('content');
         const ogDescription = $('meta[property="og:description"]').attr('content');
+        const metaDescription = $('meta[name="description"]').attr('content') || '';
         const hasUsernameInJSON = html.includes(`"username":"${username}"`);
         const hasOGData = !!(ogTitle && ogDescription);
+        const hasFollowText = html.includes('"Follow"') || html.includes('"Takip Et"');
+        const hasPostData = html.includes('edge_owner_to_timeline_media') || html.includes('followed_by');
+
+        // Log title for debugging
+        console.log(`[CHECK] ${username} | Status: ${response.status} | Title: "${title.trim().substring(0, 50)}"`);
 
         // POSITIVE INDICATORS: Active account
-        if (hasOGData || hasUsernameInJSON) {
+        if (hasOGData || hasUsernameInJSON || hasPostData || hasFollowText ||
+            (metaDescription && (metaDescription.includes('Followers') || metaDescription.includes('Takipçi')))) {
             return {
                 username,
                 status: 'AKTIF',
@@ -169,7 +176,7 @@ export async function checkInstagramUser(username: string, retryCount = 0, enabl
             };
         }
 
-        // NEGATIVE INDICATORS
+        // NEGATIVE INDICATORS: Explicit not-found messages
         if (html.includes("Sorry, this page isn't available") ||
             html.includes("Sayfa Bulunamadı") ||
             html.includes("Page Not Found") ||
@@ -195,11 +202,11 @@ export async function checkInstagramUser(username: string, retryCount = 0, enabl
             };
         }
 
-        // If we got rate limited (generic Instagram page)
-        const isGenericTitle = title.trim() === 'Instagram' || title.includes('Login');
-        if (isGenericTitle && !hasOGData && !hasUsernameInJSON) {
-            // Check if we were redirected to login page
-            const finalUrl = response.request?.res ? response.request.res.responseUrl : '';
+        // SOFT 404 / LOGIN WALL CHECK
+        // If title is generic and no positive data found -> Likely Banned or Login redirect
+        const isGenericTitle = title.trim() === 'Instagram' || title.trim() === '' || title.includes('Login');
+        if (isGenericTitle && !hasOGData && !hasUsernameInJSON && !hasFollowText) {
+            const finalUrl = (response.request as any)?.res?.responseUrl || '';
             const isLoginRedirect = finalUrl.includes('/accounts/login/');
 
             if (isLoginRedirect) {
@@ -217,6 +224,7 @@ export async function checkInstagramUser(username: string, retryCount = 0, enabl
                 };
             }
 
+            // Generic page without any profile markers = likely non-existent account
             return {
                 username,
                 status: 'BANLI',
@@ -225,11 +233,13 @@ export async function checkInstagramUser(username: string, retryCount = 0, enabl
             };
         }
 
-        // Fallback
+        // Final fallback: if we reach here, we couldn't determine the status.
+        // Default to BANLI since active accounts always have identifiable data.
+        console.log(`[FALLBACK] ${username} - Title: "${title.trim()}" | hasOGData: ${hasOGData} | hasUsernameInJSON: ${hasUsernameInJSON}`);
         return {
             username,
-            status: 'BELIRSIZ',
-            description: 'Durum belirlenemedi',
+            status: 'BANLI',
+            description: 'Hesap bulunamadı (Tanımlanamayan sayfa)',
             retryCount
         };
 
